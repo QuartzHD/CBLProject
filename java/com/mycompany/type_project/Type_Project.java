@@ -40,7 +40,7 @@ public class Type_Project {
         container.add(createDifficultyPanel(), DIFFICULTY);
         container.add(createFightPanel(), FIGHT);
         mainFrame.add(container);
-        
+
         mainFrame.setVisible(true);
 
     }
@@ -54,7 +54,6 @@ public class Type_Project {
         buttonStart.setPreferredSize(new Dimension(300, 200));
         buttonStart.setMinimumSize(new Dimension(100, 100));
 
-        
         buttonStart.addActionListener(e -> {
             System.out.println("buttonStart has been Clicked.");
             cardLayout.show(container, DIFFICULTY);
@@ -130,7 +129,7 @@ public class Type_Project {
                 Thread.currentThread().interrupt();
             }
             startFight();
-        }).start();	
+        }).start();
 
     }
 
@@ -159,74 +158,81 @@ public class Type_Project {
         textToType.addKeyListener(l);
     }
 
-    private static JPanel createFightPanel() {
+private static JPanel createFightPanel() {
+    // Sprites
+    AnimatedSprite playerSprite = new AnimatedSprite("/player/idle/", 150, 600, 400, false);
+    AnimatedSprite enemySprite = new AnimatedSprite("/enemy/idle/", 200, 600, 400, false);
 
-        AnimatedSprite playerSprite = new AnimatedSprite("/player/idle/", 150, 200, 400, false);
-        
-        AnimatedSprite enemySprite = new AnimatedSprite("/enemy/idle/", 200, 200, 400, false);
-            
+    // Main Panel 
+    JPanel fightPanel = new JPanel(new BorderLayout());
+    fightPanel.setBackground(Color.DARK_GRAY);
 
-        JPanel fightPanel = new JPanel();
-        fightPanel.setLayout(new GridBagLayout());
+    // Timer Layout
+    timerLabel = new JLabel();
+    timerLabel.setOpaque(true);
+    Dimension timerSize = new Dimension(300, 120);
+    timerLabel.setPreferredSize(timerSize);
+    timerLabel.setMinimumSize(timerSize);
+    timerLabel.setMaximumSize(timerSize);
+    timerLabel.setBackground(Color.BLACK);
+    timerLabel.setHorizontalAlignment(SwingConstants.CENTER);
+    timerLabel.setForeground(Color.WHITE);
+    timerLabel.setFont(new Font("Dialog", Font.PLAIN, 75));
 
-        GridBagConstraints constraints = new GridBagConstraints();
-        constraints.gridx = 0;
-        constraints.gridy = 0;
-        constraints.weightx = 1;
-        constraints.weighty = 1;
-        constraints.anchor = GridBagConstraints.WEST;
-        constraints.insets = new Insets(0, 50, 0, 50);
-        fightPanel.add(playerSprite, constraints);
 
-        constraints.gridx = 1;
-        textToType = new JLabel();
-        textToType.setOpaque(true);
-        textToType.setPreferredSize(new Dimension(800, 150));
-        textToType.setBackground(Color.GRAY);
-        textToType.setHorizontalAlignment(SwingConstants.CENTER);
-        textToType.setForeground(Color.WHITE);
-        textToType.setFont(new Font("Dialog", Font.PLAIN, 65));
+    JPanel timerPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 0, 0));
+    timerPanel.setOpaque(false);
+    timerPanel.add(timerLabel);
+    fightPanel.add(timerPanel, BorderLayout.NORTH);
 
-        fightPanel.add(textToType, constraints);
+    // Player Layout
+    JPanel playerPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 50, 0));
+    playerPanel.setOpaque(false);
+    playerPanel.add(playerSprite);
+    fightPanel.add(playerPanel, BorderLayout.WEST);
 
-        timerLabel = new JLabel();
-        timerLabel.setOpaque(true);
-        timerLabel.setPreferredSize(new Dimension(300, 150));
-        timerLabel.setBackground(Color.BLACK);
-        timerLabel.setHorizontalAlignment(SwingConstants.CENTER);
-        timerLabel.setForeground(Color.WHITE);
-        timerLabel.setFont(new Font("Dialog", Font.PLAIN, 75));
-        constraints.anchor = GridBagConstraints.NORTH;
-        fightPanel.add(timerLabel, constraints);
+    // Enemy Layout
+    JPanel enemyPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 50, 0));
+    enemyPanel.setOpaque(false);
+    enemyPanel.add(enemySprite);
+    fightPanel.add(enemyPanel, BorderLayout.EAST);
 
-        countdownTimer = new Timer(1000, e -> {
+    // Text Random String Layout
+    textToType = new JLabel();
+    textToType.setOpaque(true);
+    textToType.setPreferredSize(new Dimension(1000, 150));
+    textToType.setBackground(Color.GRAY);
+    textToType.setHorizontalAlignment(SwingConstants.CENTER);
+    textToType.setForeground(Color.WHITE);
+    textToType.setFont(new Font("Dialog", Font.PLAIN, 70));
 
-            countdown -= 1;
-            if (countdown <= 0) {
-                timerLabel.setText("GO!");
-                countdownTimer.stop();
-                playerSprite.startAnimation();
-                enemySprite.startAnimation();
-            } else {
-                timerLabel.setText(String.valueOf(countdown));
-            }
 
-        });
+    JPanel textPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 0, 5));
+    textPanel.setOpaque(false);
+    textPanel.add(textToType);
+    fightPanel.add(textPanel, BorderLayout.SOUTH);
 
-        constraints.gridx = 2;
-        constraints.anchor = GridBagConstraints.EAST;
-        fightPanel.add(enemySprite, constraints);
-        fightPanel.setBackground(Color.DARK_GRAY);
-        
-        return fightPanel;
-    }
+    // Timer Logic
+    countdownTimer = new Timer(1000, e -> {
+        countdown -= 1;
+        if (countdown <= 0) {
+            timerLabel.setText("GO!");
+            countdownTimer.stop();
+            playerSprite.startAnimation();
+            enemySprite.startAnimation();
+        } else {
+            timerLabel.setText(String.valueOf(countdown));
+        }
+    });
+
+    return fightPanel;
+}
 
     // range for characters that are typable on keyboard
     private static String generateString(int length) {
         Random random = new Random();
         StringBuilder sb = new StringBuilder();
 
-        
         //Generates the string and makes sure the first and last character aren't spaces.
         for (int i = 0; i < length; i++) {
             boolean isEdge = i == 0 || i == length - 1;
