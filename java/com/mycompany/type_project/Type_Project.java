@@ -161,9 +161,9 @@ public class Type_Project {
 
     private static JPanel createFightPanel() {
 
-        AnimatedSprite playerSprite = new AnimatedSprite("/player/idle/", 150);
+        AnimatedSprite playerSprite = new AnimatedSprite("/player/idle/", 150, 200, 400, false);
         
-        AnimatedSprite enemySprite = new AnimatedSprite("/enemy/idle/", 200);
+        AnimatedSprite enemySprite = new AnimatedSprite("/enemy/idle/", 200, 200, 400, false);
             
 
         JPanel fightPanel = new JPanel();
@@ -205,6 +205,8 @@ public class Type_Project {
             if (countdown <= 0) {
                 timerLabel.setText("GO!");
                 countdownTimer.stop();
+                playerSprite.startAnimation();
+                enemySprite.startAnimation();
             } else {
                 timerLabel.setText(String.valueOf(countdown));
             }
