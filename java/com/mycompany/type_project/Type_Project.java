@@ -19,7 +19,7 @@ public class Type_Project {
     private static final String DIFFICULTY = "difficulty";
     private static final String FIGHT = "fight";
     private static String charPool = "abcdefghijklmnopqrstuvwxyz ";
-    
+
     private static JLabel textToType;
     private static JLabel marker;
     private static JLabel timerLabel;
@@ -33,6 +33,13 @@ public class Type_Project {
     public static volatile boolean botWon = false;
     private static Bot bot;
 
+    private static AnimatedSprite playerSpriteIdle;
+    private static AnimatedSprite enemySpriteIdle;
+    private static AnimatedSprite playerSpriteAttack;
+    private static AnimatedSprite enemySpriteAttack;
+
+    private static JPanel fightPanel;
+
     public static void main(String[] args) {
 
         JFrame mainFrame = new JFrame();
@@ -45,7 +52,7 @@ public class Type_Project {
         container.add(createDifficultyPanel(), DIFFICULTY);
         container.add(createFightPanel(), FIGHT);
         mainFrame.add(container);
-        
+
         mainFrame.setVisible(true);
 
     }
@@ -59,7 +66,6 @@ public class Type_Project {
         buttonStart.setPreferredSize(new Dimension(300, 200));
         buttonStart.setMinimumSize(new Dimension(100, 100));
 
-        
         buttonStart.addActionListener(e -> {
             System.out.println("buttonStart has been Clicked.");
             cardLayout.show(container, DIFFICULTY);
@@ -135,14 +141,14 @@ public class Type_Project {
                 Thread.currentThread().interrupt();
             }
             startFight();
-        }).start();	
+        }).start();
 
     }
-    
+
     private static void updateTextDisplay() {
         StringBuilder res = new StringBuilder();
         int amountOnSides = 2;
-        
+
         for (int i = -amountOnSides; i <= amountOnSides; i++) {
             if (stringIndex + i < 0 || stringIndex + i > stringToType.length() - 1) {
                 res.append(" ");
@@ -150,7 +156,7 @@ public class Type_Project {
                 res.append(stringToType.charAt(stringIndex + i));
             }
         }
-        
+
         textToType.setText(res.toString());
     }
 
@@ -181,103 +187,150 @@ public class Type_Project {
         playerWon = false;
         stringIndex = 0;
     }
-    
+
     private static void startFight() {
         System.out.println("Started fight!");
-        
+
         bot = new Bot(stringToType, diffNum);
         InputListener l = new InputListener();
         textToType.requestFocusInWindow();
         bot.start();
         textToType.addKeyListener(l);
     }
-    
+
     public static void endFight() {
         if (botWon) {
             textToType.setText("Bot won!");
+            enemySpriteIdle.stopAnimation();
+            enemySpriteIdle.setVisible(false);
+
+            enemySpriteAttack.setVisible(true);
+            enemySpriteAttack.oneCycleAnimation(() -> {
+                enemySpriteAttack.setVisible(false);
+                enemySpriteIdle.setVisible(true);
+                enemySpriteIdle.startAnimation();
+            });
         } else if (playerWon) {
             textToType.setText("Player won!");
+            playerSpriteIdle.stopAnimation();
+            playerSpriteIdle.setVisible(false);
+
+            playerSpriteAttack.setVisible(true);
+            playerSpriteAttack.oneCycleAnimation(() -> {
+                playerSpriteAttack.setVisible(false);
+                playerSpriteIdle.setVisible(true);
+                playerSpriteIdle.startAnimation();
+            });
         }
-        
+
         cleanUp();
-          
+
         new Thread(() -> {
-           try {
-               Thread.sleep(3000);
-           } catch (InterruptedException e) {
-               
-           }
-           startTimer();
+            try {
+                Thread.sleep(3000);
+            } catch (InterruptedException e) {
+
+            }
+            startTimer();
         }).start();
     }
 
     private static JPanel createFightPanel() {
 
-        AnimatedSprite playerSprite = new AnimatedSprite("/player/idle/", 150, 200, 400, false);
-        
-        AnimatedSprite enemySprite = new AnimatedSprite("/enemy/idle/", 200, 200, 400, false);
-            
+        enemySpriteIdle = new AnimatedSprite("/enemy/idle/", 400, 600, 400, false);
 
-        JPanel fightPanel = new JPanel();
-        fightPanel.setLayout(new GridBagLayout());
+        playerSpriteIdle = new AnimatedSprite("/player/idle/", 402, 600, 400, false);
 
-        GridBagConstraints constraints = new GridBagConstraints();
-        constraints.gridx = 0;
-        constraints.gridy = 0;
-        constraints.weightx = 1;
-        constraints.weighty = 1;
-        constraints.anchor = GridBagConstraints.WEST;
-        constraints.insets = new Insets(0, 50, 0, 50);
-        fightPanel.add(playerSprite, constraints);
+        playerSpriteAttack = new AnimatedSprite("/player/attack/", 95, 600, 400, false);
 
-        constraints.gridx = 1;
-        constraints.gridy = 2;
-        textToType = new JLabel();
-        textToType.setOpaque(true);
-        textToType.setPreferredSize(new Dimension(800, 150));
-        textToType.setBackground(Color.GRAY);
-        textToType.setHorizontalAlignment(SwingConstants.CENTER);
-        textToType.setForeground(Color.WHITE);
-        textToType.setFont(new Font("Verdana", Font.PLAIN, 65));
-        fightPanel.add(textToType, constraints);
-        
-        constraints.gridy = 0;
-        marker = new JLabel();
-        marker.setOpaque(true);
-        marker.setBackground(Color.MAGENTA);
-        marker.setLayout(null);
-        marker.setBounds(-100, 0, 100, 100);
-        fightPanel.add(marker);
+        enemySpriteAttack = new AnimatedSprite("/enemy/attack/", 95, 600, 400, false);
 
+        fightPanel = new BackgroundPanel("/background/fight/1.png", new BorderLayout());
+
+        // Timer Layout
         timerLabel = new JLabel();
         timerLabel.setOpaque(true);
-        timerLabel.setPreferredSize(new Dimension(300, 150));
+        Dimension timerSize = new Dimension(300, 120);
+        timerLabel.setPreferredSize(timerSize);
+        timerLabel.setMinimumSize(timerSize);
+        timerLabel.setMaximumSize(timerSize);
         timerLabel.setBackground(Color.BLACK);
         timerLabel.setHorizontalAlignment(SwingConstants.CENTER);
         timerLabel.setForeground(Color.WHITE);
         timerLabel.setFont(new Font("Dialog", Font.PLAIN, 75));
-        constraints.anchor = GridBagConstraints.NORTH;
-        fightPanel.add(timerLabel, constraints);
-        
-        countdownTimer = new Timer(1000, e -> {
 
+        JPanel timerPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 0, 0));
+        timerPanel.setOpaque(false);
+        timerPanel.add(timerLabel);
+        fightPanel.add(timerPanel, BorderLayout.NORTH);
+
+        // Player Layout
+        JPanel playerPanel = new JPanel();
+        playerPanel.setOpaque(false);
+        playerPanel.setLayout(new OverlayLayout(playerPanel));
+        playerSpriteAttack.setAlignmentX(Component.CENTER_ALIGNMENT);
+        playerSpriteAttack.setAlignmentY(Component.CENTER_ALIGNMENT);
+        playerSpriteIdle.setAlignmentX(Component.CENTER_ALIGNMENT);
+        playerSpriteIdle.setAlignmentY(Component.CENTER_ALIGNMENT);
+        playerPanel.setBorder(
+                BorderFactory.createEmptyBorder(170, 0, 0, 0)
+        );
+
+        playerPanel.add(playerSpriteAttack);
+        playerSpriteAttack.setVisible(false);
+        playerPanel.add(playerSpriteIdle);
+        fightPanel.add(playerPanel, BorderLayout.WEST);
+
+        // Enemy Layout
+        JPanel enemyPanel = new JPanel();
+        enemyPanel.setOpaque(false);
+        enemyPanel.setLayout(new OverlayLayout(enemyPanel));
+        enemySpriteAttack.setAlignmentX(Component.CENTER_ALIGNMENT);
+        enemySpriteAttack.setAlignmentY(Component.CENTER_ALIGNMENT);
+        enemySpriteIdle.setAlignmentX(Component.CENTER_ALIGNMENT);
+        enemySpriteIdle.setAlignmentY(Component.CENTER_ALIGNMENT);
+        enemyPanel.setBorder(
+                BorderFactory.createEmptyBorder(170, 0, 0, 0)
+        );
+
+        enemyPanel.add(enemySpriteAttack);
+        enemySpriteAttack.setVisible(false);
+        enemyPanel.add(enemySpriteIdle);
+        fightPanel.add(enemyPanel, BorderLayout.EAST);
+
+        // Text Random String Layout
+        textToType = new JLabel();
+        textToType.setOpaque(true);
+        textToType.setPreferredSize(new Dimension(1000, 150));
+        textToType.setBackground(Color.GRAY);
+        textToType.setHorizontalAlignment(SwingConstants.CENTER);
+        textToType.setForeground(Color.WHITE);
+        textToType.setFont(new Font("Dialog", Font.PLAIN, 70));
+
+        JPanel textPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 0, 5));
+        textPanel.setOpaque(false);
+        textPanel.add(textToType);
+        fightPanel.add(textPanel, BorderLayout.SOUTH);
+
+        // Timer Logic
+        countdownTimer = new Timer(1000, e -> {
             countdown -= 1;
             if (countdown <= 0) {
                 timerLabel.setText("GO!");
                 countdownTimer.stop();
-                playerSprite.startAnimation();
-                enemySprite.startAnimation();
+                playerSpriteIdle.startAnimation();
+                enemySpriteIdle.startAnimation();
             } else {
                 timerLabel.setText(String.valueOf(countdown));
             }
-
         });
 
-        constraints.gridx = 2;
-        constraints.anchor = GridBagConstraints.EAST;
-        fightPanel.add(enemySprite, constraints);
-        fightPanel.setBackground(Color.DARK_GRAY);
-        
+//        marker = new JLabel();
+//        marker.setOpaque(true);
+//        marker.setBackground(Color.MAGENTA);
+//        marker.setLayout(null);
+//        marker.setBounds(-100, 0, 100, 100);
+//        fightPanel.add(marker);
         return fightPanel;
     }
 
@@ -286,7 +339,6 @@ public class Type_Project {
         Random random = new Random();
         StringBuilder sb = new StringBuilder();
 
-        
         //Generates the string and makes sure the first and last character aren't spaces.
         for (int i = 0; i < length; i++) {
             boolean isEdge = i == 0 || i == length - 1;

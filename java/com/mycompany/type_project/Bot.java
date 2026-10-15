@@ -61,7 +61,7 @@ public class Bot extends Thread{
                     Type_Project.endFight();
                     throw new InterruptedException();
                 } else {
-                    System.out.println("Bot at" + botStringIndex);
+                    System.out.println("Bot at " + botStringIndex);
                 }
                 int finalSleepTime = (int)(ThreadLocalRandom.current().nextDouble(minSleepTime, maxSleepTime) * 1000);
                 Thread.sleep(finalSleepTime); // this way the typespeed of the bot depends on difficulty 
