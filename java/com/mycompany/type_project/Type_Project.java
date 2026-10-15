@@ -231,15 +231,17 @@ public class Type_Project {
         fightPanel.add(playerSprite, constraints);
 
         constraints.gridx = 1;
+        constraints.gridy = 2;
         textToType = new JLabel();
         textToType.setOpaque(true);
         textToType.setPreferredSize(new Dimension(800, 150));
         textToType.setBackground(Color.GRAY);
         textToType.setHorizontalAlignment(SwingConstants.CENTER);
         textToType.setForeground(Color.WHITE);
-        textToType.setFont(new Font("Dialog", Font.PLAIN, 65));
+        textToType.setFont(new Font("Verdana", Font.PLAIN, 65));
         fightPanel.add(textToType, constraints);
         
+        constraints.gridy = 0;
         marker = new JLabel();
         marker.setOpaque(true);
         marker.setBackground(Color.MAGENTA);
