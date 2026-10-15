@@ -19,14 +19,19 @@ public class Type_Project {
     private static final String DIFFICULTY = "difficulty";
     private static final String FIGHT = "fight";
     private static String charPool = "abcdefghijklmnopqrstuvwxyz ";
-
+    
     private static JLabel textToType;
+    private static JLabel marker;
     private static JLabel timerLabel;
     private static int countdown;
     private static Timer countdownTimer;
-    private static int diffNum = 5;
+    private static int diffNum = 0;
     private static String stringToType;
     private static int stringIndex = 0;
+    private static int botStringIndex = 0;
+    public static volatile boolean playerWon = false;
+    public static volatile boolean botWon = false;
+    private static Bot bot;
 
     public static void main(String[] args) {
 
@@ -82,7 +87,7 @@ public class Type_Project {
 
         buttonEasy.addActionListener(e -> {
             System.out.println("buttonEasy has been Clicked.");
-            diffNum = 5;
+            diffNum = 0;
             charPool = "abcdefghijklmnopqrstuvwxyz ";
             cardLayout.show(container, FIGHT);
             startTimer();
@@ -90,7 +95,7 @@ public class Type_Project {
 
         buttonIntermediate.addActionListener(e -> {
             System.out.println("buttonIntermediate has been Clicked.");
-            diffNum = 10;
+            diffNum = 1;
             charPool = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ ";
             cardLayout.show(container, FIGHT);
             startTimer();
@@ -98,7 +103,7 @@ public class Type_Project {
 
         buttonHard.addActionListener(e -> {
             System.out.println("buttonHard has been Clicked.");
-            diffNum = 15;
+            diffNum = 2;
             charPool = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 ";
             cardLayout.show(container, FIGHT);
             startTimer();
@@ -106,7 +111,7 @@ public class Type_Project {
 
         buttonImpossible.addActionListener(e -> {
             System.out.println("buttonImpossible has been Clicked.");
-            diffNum = 20;
+            diffNum = 3;
             charPool = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^*()-=_+[]{};:,./? ";
             cardLayout.show(container, FIGHT);
             startTimer();
@@ -116,8 +121,8 @@ public class Type_Project {
     }
 
     private static void startTimer() {
-        stringToType = generateString(diffNum);
-        textToType.setText(stringToType);
+        stringToType = generateString(10 + (diffNum * 5));
+        updateTextDisplay();
         countdown = 3;
         timerLabel.setText(String.valueOf(countdown));
         countdownTimer.start();
@@ -133,30 +138,77 @@ public class Type_Project {
         }).start();	
 
     }
+    
+    private static void updateTextDisplay() {
+        StringBuilder res = new StringBuilder();
+        int amountOnSides = 2;
+        
+        for (int i = -amountOnSides; i <= amountOnSides; i++) {
+            if (stringIndex + i < 0 || stringIndex + i > stringToType.length() - 1) {
+                res.append(" ");
+            } else {
+                res.append(stringToType.charAt(stringIndex + i));
+            }
+        }
+        
+        textToType.setText(res.toString());
+    }
 
     // Made this method so the inputlistener class and this class
     // can communicate. The input key is evaluated here too.
     public static void keyParse(char key) {
         System.out.println(key);
         if (stringToType.charAt(stringIndex) == key) {
-            System.out.println("Correct!");
             stringIndex += 1;
+            updateTextDisplay();
             if (stringIndex == stringToType.length()) {
                 System.out.println("Done!");
-                textToType.removeKeyListener(textToType.getKeyListeners()[0]);
-
+                playerWon = true;
+                bot.interrupt();
+                endFight();
             }
         } else {
             System.out.println("Wrong! Start over");
             stringIndex = 0;
+            updateTextDisplay();
         }
     }
 
+    private static void cleanUp() {
+        textToType.removeKeyListener(textToType.getKeyListeners()[0]);
+        botWon = false;
+        botStringIndex = 0;
+        playerWon = false;
+        stringIndex = 0;
+    }
+    
     private static void startFight() {
         System.out.println("Started fight!");
+        
+        bot = new Bot(stringToType, diffNum);
         InputListener l = new InputListener();
         textToType.requestFocusInWindow();
+        bot.start();
         textToType.addKeyListener(l);
+    }
+    
+    public static void endFight() {
+        if (botWon) {
+            textToType.setText("Bot won!");
+        } else if (playerWon) {
+            textToType.setText("Player won!");
+        }
+        
+        cleanUp();
+          
+        new Thread(() -> {
+           try {
+               Thread.sleep(3000);
+           } catch (InterruptedException e) {
+               
+           }
+           startTimer();
+        }).start();
     }
 
     private static JPanel createFightPanel() {
@@ -186,8 +238,14 @@ public class Type_Project {
         textToType.setHorizontalAlignment(SwingConstants.CENTER);
         textToType.setForeground(Color.WHITE);
         textToType.setFont(new Font("Dialog", Font.PLAIN, 65));
-
         fightPanel.add(textToType, constraints);
+        
+        marker = new JLabel();
+        marker.setOpaque(true);
+        marker.setBackground(Color.MAGENTA);
+        marker.setLayout(null);
+        marker.setBounds(-100, 0, 100, 100);
+        fightPanel.add(marker);
 
         timerLabel = new JLabel();
         timerLabel.setOpaque(true);
@@ -198,7 +256,7 @@ public class Type_Project {
         timerLabel.setFont(new Font("Dialog", Font.PLAIN, 75));
         constraints.anchor = GridBagConstraints.NORTH;
         fightPanel.add(timerLabel, constraints);
-
+        
         countdownTimer = new Timer(1000, e -> {
 
             countdown -= 1;
