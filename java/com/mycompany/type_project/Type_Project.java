@@ -6,6 +6,8 @@ import java.awt.*;
 import java.awt.event.*;
 import java.util.Random;
 
+// twee JLabels voor healthbar en crit bar dus 4 in totaal
+// letter gekleurd in het midden vinden
 /**
  *
  * @author Bobbert
@@ -15,14 +17,19 @@ public class Type_Project {
     private static final CardLayout cardLayout = new CardLayout();
     private static final JPanel container = new JPanel(cardLayout);
 
-    private static final String START = "start";
+    private static final String START = "START";
+    private static final String STOP = "Exit game";
     private static final String DIFFICULTY = "difficulty";
     private static final String FIGHT = "fight";
     private static String charPool = "abcdefghijklmnopqrstuvwxyz ";
-    
+
     private static JLabel textToType;
     private static JLabel marker;
     private static JLabel timerLabel;
+    private static JProgressBar playerHealthBar;
+    private static JProgressBar playerCritBar;
+    private static JProgressBar enemyHealthBar;
+    private static JProgressBar enemyCritBar;
     private static int countdown;
     private static Timer countdownTimer;
     private static int diffNum = 0;
@@ -31,7 +38,21 @@ public class Type_Project {
     private static int botStringIndex = 0;
     public static volatile boolean playerWon = false;
     public static volatile boolean botWon = false;
+    
     private static Bot bot;
+    private static int botHP = 100;
+    private static int botXP;
+    public static boolean botMadeMistake;
+    private static int playerHP = 100;
+    private static int playerXP;
+    public static boolean playerMadeMistake;
+
+    private static AnimatedSprite playerSpriteIdle;
+    private static AnimatedSprite enemySpriteIdle;
+    private static AnimatedSprite playerSpriteAttack;
+    private static AnimatedSprite enemySpriteAttack;
+
+    private static JPanel fightPanel;
 
     public static void main(String[] args) {
 
@@ -45,24 +66,33 @@ public class Type_Project {
         container.add(createDifficultyPanel(), DIFFICULTY);
         container.add(createFightPanel(), FIGHT);
         mainFrame.add(container);
-        
+
         mainFrame.setVisible(true);
 
     }
 
     private static JPanel createStartPanel() {
 
+        JPanel startPanelSelect = new JPanel();
+        startPanelSelect.setLayout(new GridLayout(2, 1, 0, 10));
         JButton buttonStart = new JButton(START);
+        JButton buttonStop = new JButton(STOP);
+
+        startPanelSelect.add(buttonStart);
+        startPanelSelect.add(buttonStop);
+
         JPanel startPanel = new JPanel();
         startPanel.setLayout(new GridBagLayout());
-        startPanel.add(buttonStart);
-        buttonStart.setPreferredSize(new Dimension(300, 200));
-        buttonStart.setMinimumSize(new Dimension(100, 100));
+        startPanel.add(startPanelSelect);
 
-        
         buttonStart.addActionListener(e -> {
             System.out.println("buttonStart has been Clicked.");
             cardLayout.show(container, DIFFICULTY);
+        });
+
+        buttonStop.addActionListener(e -> {
+            System.out.println("buttonStop has been Clicked.");
+            System.exit(0);
         });
 
         return startPanel;
@@ -123,6 +153,7 @@ public class Type_Project {
     private static void startTimer() {
         stringToType = generateString(10 + (diffNum * 5));
         updateTextDisplay();
+        updateFightPanel();
         countdown = 3;
         timerLabel.setText(String.valueOf(countdown));
         countdownTimer.start();
@@ -134,23 +165,32 @@ public class Type_Project {
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
             }
-            startFight();
-        }).start();	
+            startRound();
+        }).start();
 
     }
-    
+
     private static void updateTextDisplay() {
-        StringBuilder res = new StringBuilder();
+        StringBuilder res = new StringBuilder("<html>");
         int amountOnSides = 2;
-        
+
         for (int i = -amountOnSides; i <= amountOnSides; i++) {
+            char c;
             if (stringIndex + i < 0 || stringIndex + i > stringToType.length() - 1) {
-                res.append(" ");
+                c = ' ';
             } else {
-                res.append(stringToType.charAt(stringIndex + i));
+                c = stringToType.charAt(stringIndex + i);
+            }
+            
+            String displayChar = (c == ' ') ? "&nbsp;" : String.valueOf(c);
+            
+            if (i == 0) {
+                res.append("<span style='color:red;'>").append(displayChar).append("<span>");
+            } else {
+                res.append("<span style='color:white;'>").append(displayChar).append("<span>");                
             }
         }
-        
+        res.append("</html>");
         textToType.setText(res.toString());
     }
 
@@ -165,11 +205,12 @@ public class Type_Project {
                 System.out.println("Done!");
                 playerWon = true;
                 bot.interrupt();
-                endFight();
+                endRound();
             }
         } else {
             System.out.println("Wrong! Start over");
             stringIndex = 0;
+            playerMadeMistake = true;
             updateTextDisplay();
         }
     }
@@ -181,104 +222,252 @@ public class Type_Project {
         playerWon = false;
         stringIndex = 0;
     }
-    
-    private static void startFight() {
+
+    private static void startRound() {
         System.out.println("Started fight!");
-        
+
         bot = new Bot(stringToType, diffNum);
         InputListener l = new InputListener();
         textToType.requestFocusInWindow();
         bot.start();
         textToType.addKeyListener(l);
     }
-    
-    public static void endFight() {
+
+    public static void endRound() {
         if (botWon) {
             textToType.setText("Bot won!");
+            enemySpriteIdle.stopAnimation();
+            enemySpriteIdle.setVisible(false);
+
+            playerHP -= 20;            
+            botXP += 25;
+            if (!botMadeMistake) {
+                botXP += 20;
+                botMadeMistake = false;
+            }
+            
+            enemySpriteAttack.setVisible(true);
+            enemySpriteAttack.oneCycleAnimation(() -> {
+                enemySpriteAttack.setVisible(false);
+                enemySpriteIdle.setVisible(true);
+                enemySpriteIdle.startAnimation();
+            });
         } else if (playerWon) {
             textToType.setText("Player won!");
+            playerSpriteIdle.stopAnimation();
+            playerSpriteIdle.setVisible(false);
+            
+            botHP -= 20;
+            playerXP += 25;            
+            if (!playerMadeMistake) {
+                playerXP += 20;
+                playerMadeMistake = false;
+            }
+
+            playerSpriteAttack.setVisible(true);
+            playerSpriteAttack.oneCycleAnimation(() -> {
+                playerSpriteAttack.setVisible(false);
+                playerSpriteIdle.setVisible(true);
+                playerSpriteIdle.startAnimation();
+            });
+        }
+
+        updateFightPanel();
+        cleanUp();
+        
+        if (playerHP <= 0) {
+            endFight(1);
+            return;
+        } else if (botHP <= 0) {
+            endFight(0);
+            return;
+        }
+
+        new Thread(() -> {
+            try {
+                Thread.sleep(3000);
+            } catch (InterruptedException e) {
+
+            }
+            startTimer();
+        }).start();
+    }
+    
+    private static void endFight(int winner) {
+        if (winner == 0) {  // player won
+            System.out.println("Player won the game");
+        } else {    // bot won
+            System.out.println("Bot won the game");
         }
         
-        cleanUp();
-          
         new Thread(() -> {
-           try {
-               Thread.sleep(3000);
-           } catch (InterruptedException e) {
-               
-           }
-           startTimer();
+            try {
+                Thread.sleep(3000);
+                cardLayout.show(container, START);
+                    playerHP = 100;
+                    playerXP = 0;
+                    botHP = 100;
+                    botXP = 0;
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
         }).start();
     }
 
     private static JPanel createFightPanel() {
 
-        AnimatedSprite playerSprite = new AnimatedSprite("/player/idle/", 150, 200, 400, false);
-        
-        AnimatedSprite enemySprite = new AnimatedSprite("/enemy/idle/", 200, 200, 400, false);
-            
+        enemySpriteIdle = new AnimatedSprite("/enemy/idle/", 400, 600, 400, false);
 
-        JPanel fightPanel = new JPanel();
-        fightPanel.setLayout(new GridBagLayout());
+        playerSpriteIdle = new AnimatedSprite("/player/idle/", 402, 600, 400, false);
 
-        GridBagConstraints constraints = new GridBagConstraints();
-        constraints.gridx = 0;
-        constraints.gridy = 0;
-        constraints.weightx = 1;
-        constraints.weighty = 1;
-        constraints.anchor = GridBagConstraints.WEST;
-        constraints.insets = new Insets(0, 50, 0, 50);
-        fightPanel.add(playerSprite, constraints);
+        playerSpriteAttack = new AnimatedSprite("/player/attack/", 95, 600, 400, false);
 
-        constraints.gridx = 1;
-        constraints.gridy = 2;
-        textToType = new JLabel();
-        textToType.setOpaque(true);
-        textToType.setPreferredSize(new Dimension(800, 150));
-        textToType.setBackground(Color.GRAY);
-        textToType.setHorizontalAlignment(SwingConstants.CENTER);
-        textToType.setForeground(Color.WHITE);
-        textToType.setFont(new Font("Verdana", Font.PLAIN, 65));
-        fightPanel.add(textToType, constraints);
-        
-        constraints.gridy = 0;
-        marker = new JLabel();
-        marker.setOpaque(true);
-        marker.setBackground(Color.MAGENTA);
-        marker.setLayout(null);
-        marker.setBounds(-100, 0, 100, 100);
-        fightPanel.add(marker);
+        enemySpriteAttack = new AnimatedSprite("/enemy/attack/", 95, 600, 400, false);
 
+        fightPanel = new BackgroundPanel("/background/fight/1.png", new BorderLayout());
+
+        // Player Bar Layout
+        playerHealthBar = new JProgressBar(0, 100);
+        playerHealthBar.setValue(100);
+        playerHealthBar.setForeground(Color.RED);
+        playerHealthBar.setStringPainted(true);
+        playerHealthBar.setPreferredSize(new Dimension(200, 25));
+        playerHealthBar.setMaximumSize(new Dimension(200, 25));
+        playerHealthBar.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+        playerCritBar = new JProgressBar(0, 100);
+        playerCritBar.setValue(0);
+        playerCritBar.setForeground(Color.BLUE);
+        playerCritBar.setStringPainted(true);
+        playerCritBar.setPreferredSize(new Dimension(130, 20));
+        playerCritBar.setMaximumSize(new Dimension(130, 20));
+        playerCritBar.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+        JPanel playerBarPanel = new JPanel();
+        playerBarPanel.setLayout(new BoxLayout(playerBarPanel, BoxLayout.Y_AXIS));
+        playerBarPanel.setOpaque(false);
+        playerBarPanel.add(playerHealthBar);
+        playerBarPanel.add(Box.createVerticalStrut(5));
+        playerBarPanel.add(playerCritBar);
+
+        // Enemy Bar Layout
+        enemyHealthBar = new JProgressBar(0, 100);
+        enemyHealthBar.setValue(100);
+        enemyHealthBar.setForeground(Color.RED);
+        enemyHealthBar.setStringPainted(true);
+        enemyHealthBar.setPreferredSize(new Dimension(200, 25));
+        enemyHealthBar.setMaximumSize(new Dimension(200, 25));
+        enemyHealthBar.setAlignmentX(Component.RIGHT_ALIGNMENT);
+
+        enemyCritBar = new JProgressBar(0, 100);
+        enemyCritBar.setValue(0);
+        enemyCritBar.setForeground(Color.BLUE);
+        enemyCritBar.setStringPainted(true);
+        enemyCritBar.setPreferredSize(new Dimension(130, 20));
+        enemyCritBar.setMaximumSize(new Dimension(130, 20));
+        enemyCritBar.setAlignmentX(Component.RIGHT_ALIGNMENT);
+
+        JPanel enemyBarPanel = new JPanel();
+        enemyBarPanel.setLayout(new BoxLayout(enemyBarPanel, BoxLayout.Y_AXIS));
+        enemyBarPanel.setOpaque(false);
+        enemyBarPanel.add(enemyHealthBar);
+        enemyBarPanel.add(Box.createVerticalStrut(5));
+        enemyBarPanel.add(enemyCritBar);
+
+        // Timer Layout
         timerLabel = new JLabel();
         timerLabel.setOpaque(true);
-        timerLabel.setPreferredSize(new Dimension(300, 150));
+        Dimension timerSize = new Dimension(300, 120);
+        timerLabel.setPreferredSize(timerSize);
+        timerLabel.setMinimumSize(timerSize);
+        timerLabel.setMaximumSize(timerSize);
         timerLabel.setBackground(Color.BLACK);
         timerLabel.setHorizontalAlignment(SwingConstants.CENTER);
         timerLabel.setForeground(Color.WHITE);
         timerLabel.setFont(new Font("Dialog", Font.PLAIN, 75));
-        constraints.anchor = GridBagConstraints.NORTH;
-        fightPanel.add(timerLabel, constraints);
-        
-        countdownTimer = new Timer(1000, e -> {
 
+        JPanel timerPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 0, 0));
+        timerPanel.setOpaque(false);
+        timerPanel.add(timerLabel);
+
+        JPanel topContainer = new JPanel(new BorderLayout());
+        topContainer.setOpaque(false);
+        topContainer.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        topContainer.add(playerBarPanel, BorderLayout.WEST);
+        topContainer.add(timerPanel, BorderLayout.CENTER);
+        topContainer.add(enemyBarPanel, BorderLayout.EAST);
+
+        fightPanel.add(topContainer, BorderLayout.NORTH);
+
+        // Player Layout
+        JPanel playerPanel = new JPanel();
+        playerPanel.setOpaque(false);
+        playerPanel.setLayout(new OverlayLayout(playerPanel));
+        playerSpriteAttack.setAlignmentX(Component.CENTER_ALIGNMENT);
+        playerSpriteAttack.setAlignmentY(Component.CENTER_ALIGNMENT);
+        playerSpriteIdle.setAlignmentX(Component.CENTER_ALIGNMENT);
+        playerSpriteIdle.setAlignmentY(Component.CENTER_ALIGNMENT);
+        playerPanel.setBorder(
+                BorderFactory.createEmptyBorder(170, 0, 0, 0)
+        );
+
+        playerPanel.add(playerSpriteAttack);
+        playerSpriteAttack.setVisible(false);
+        playerPanel.add(playerSpriteIdle);
+        fightPanel.add(playerPanel, BorderLayout.WEST);
+
+        // Enemy Layout
+        JPanel enemyPanel = new JPanel();
+        enemyPanel.setOpaque(false);
+        enemyPanel.setLayout(new OverlayLayout(enemyPanel));
+        enemySpriteAttack.setAlignmentX(Component.CENTER_ALIGNMENT);
+        enemySpriteAttack.setAlignmentY(Component.CENTER_ALIGNMENT);
+        enemySpriteIdle.setAlignmentX(Component.CENTER_ALIGNMENT);
+        enemySpriteIdle.setAlignmentY(Component.CENTER_ALIGNMENT);
+        enemyPanel.setBorder(
+                BorderFactory.createEmptyBorder(170, 0, 0, 0)
+        );
+
+        enemyPanel.add(enemySpriteAttack);
+        enemySpriteAttack.setVisible(false);
+        enemyPanel.add(enemySpriteIdle);
+        fightPanel.add(enemyPanel, BorderLayout.EAST);
+
+        // Text Random String Layout
+        textToType = new JLabel();
+        textToType.setOpaque(true);
+        textToType.setPreferredSize(new Dimension(1000, 150));
+        textToType.setBackground(Color.GRAY);
+        textToType.setHorizontalAlignment(SwingConstants.CENTER);
+        textToType.setForeground(Color.WHITE);
+        textToType.setFont(new Font("Monospaced", Font.PLAIN, 70));
+
+        JPanel textPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 0, 5));
+        textPanel.setOpaque(false);
+        textPanel.add(textToType);
+        fightPanel.add(textPanel, BorderLayout.SOUTH);
+
+        // Timer Logic
+        countdownTimer = new Timer(1000, e -> {
             countdown -= 1;
             if (countdown <= 0) {
                 timerLabel.setText("GO!");
                 countdownTimer.stop();
-                playerSprite.startAnimation();
-                enemySprite.startAnimation();
+                playerSpriteIdle.startAnimation();
+                enemySpriteIdle.startAnimation();
             } else {
                 timerLabel.setText(String.valueOf(countdown));
             }
-
         });
 
-        constraints.gridx = 2;
-        constraints.anchor = GridBagConstraints.EAST;
-        fightPanel.add(enemySprite, constraints);
-        fightPanel.setBackground(Color.DARK_GRAY);
-        
         return fightPanel;
+    }
+    
+    private static void updateFightPanel() {
+        playerHealthBar.setValue(playerHP);
+        playerCritBar.setValue(playerXP);
+        enemyHealthBar.setValue(botHP);
+        enemyCritBar.setValue(botXP);
     }
 
     // range for characters that are typable on keyboard
@@ -286,7 +475,6 @@ public class Type_Project {
         Random random = new Random();
         StringBuilder sb = new StringBuilder();
 
-        
         //Generates the string and makes sure the first and last character aren't spaces.
         for (int i = 0; i < length; i++) {
             boolean isEdge = i == 0 || i == length - 1;
