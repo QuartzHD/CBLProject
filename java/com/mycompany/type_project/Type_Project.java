@@ -22,6 +22,11 @@ public class Type_Project {
     private static final String DIFFICULTY = "difficulty";
     private static final String FIGHT = "fight";
     private static String charPool = "abcdefghijklmnopqrstuvwxyz ";
+    
+    private static int ATTACK_DAMAGE = 20;
+    private static int CRITICAL_DAMAGE = 40;
+    private static int CRITICAL_INCREASE = 25;
+    private static int PERFECT_CRITICAL_BONUS = 40;
 
     private static JLabel textToType;
     private static JLabel marker;
@@ -170,12 +175,13 @@ public class Type_Project {
 
     }
 
-    private static void updateTextDisplay() {
+    public static void updateTextDisplay() {
         StringBuilder res = new StringBuilder("<html>");
         int amountOnSides = 2;
 
         for (int i = -amountOnSides; i <= amountOnSides; i++) {
             char c;
+            
             if (stringIndex + i < 0 || stringIndex + i > stringToType.length() - 1) {
                 c = ' ';
             } else {
@@ -184,10 +190,20 @@ public class Type_Project {
             
             String displayChar = (c == ' ') ? "&nbsp;" : String.valueOf(c);
             
+            // player and bot different color
+//            if (i == 0) {
+//                res.append("<span style='color:rgb(0, 30, 173);'>").append(displayChar).append("<span>");
+//            } else if (bot != null && stringIndex + i == bot.botStringIndex) {
+//                res.append("<span style='color:rgb(255, 122, 122);'>").append(displayChar).append("<span>");
+//            } else {
+//                res.append("<span style='color:white;'>").append(displayChar).append("<span>");                
+//            }
             if (i == 0) {
-                res.append("<span style='color:red;'>").append(displayChar).append("<span>");
-            } else {
                 res.append("<span style='color:white;'>").append(displayChar).append("<span>");                
+            }else if (bot != null && stringIndex + i < bot.botStringIndex) {
+                res.append("<span style='color:rgb(173, 0, 0);'>").append(displayChar).append("<span>");
+            } else {
+                res.append("<span style='color:rgb(7, 157, 255);'>").append(displayChar).append("<span>");                
             }
         }
         res.append("</html>");
@@ -238,12 +254,17 @@ public class Type_Project {
             textToType.setText("Bot won!");
             enemySpriteIdle.stopAnimation();
             enemySpriteIdle.setVisible(false);
-
-            playerHP -= 20;            
-            botXP += 25;
-            if (!botMadeMistake) {
-                botXP += 20;
-                botMadeMistake = false;
+            
+            if (botXP >= 100) {
+                botXP = 0;
+                playerHP -= CRITICAL_DAMAGE;
+            } else {
+                playerHP -= ATTACK_DAMAGE;            
+                botXP += CRITICAL_INCREASE;
+                if (!botMadeMistake) {
+                    botXP += PERFECT_CRITICAL_BONUS;
+                    botMadeMistake = false;
+                } 
             }
             
             enemySpriteAttack.setVisible(true);
@@ -257,11 +278,16 @@ public class Type_Project {
             playerSpriteIdle.stopAnimation();
             playerSpriteIdle.setVisible(false);
             
-            botHP -= 20;
-            playerXP += 25;            
-            if (!playerMadeMistake) {
-                playerXP += 20;
-                playerMadeMistake = false;
+            if (playerXP >= 100) {
+                playerXP = 0;
+                botHP -= CRITICAL_DAMAGE;
+            } else {
+                botHP -= ATTACK_DAMAGE;            
+                playerXP += CRITICAL_INCREASE;
+                if (!playerMadeMistake) {
+                    playerXP += PERFECT_CRITICAL_BONUS;
+                    playerMadeMistake = false;
+                } 
             }
 
             playerSpriteAttack.setVisible(true);
@@ -293,10 +319,10 @@ public class Type_Project {
         }).start();
     }
     
-    private static void endFight(int winner) {
-        if (winner == 0) {  // player won
+    private static void endFight(int winner) {  // int 0 for player, int 1 for bot
+        if (winner == 0) {  
             System.out.println("Player won the game");
-        } else {    // bot won
+        } else {    
             System.out.println("Bot won the game");
         }
         
@@ -464,10 +490,29 @@ public class Type_Project {
     }
     
     private static void updateFightPanel() {
-        playerHealthBar.setValue(playerHP);
-        playerCritBar.setValue(playerXP);
-        enemyHealthBar.setValue(botHP);
-        enemyCritBar.setValue(botXP);
+        if (playerHP <= 0) {
+            playerHealthBar.setValue(0);
+        } else {
+            playerHealthBar.setValue(playerHP);
+        }
+        
+        if (playerXP >= 100) {
+            playerCritBar.setValue(100);
+        } else {
+            playerCritBar.setValue(playerXP);
+        }
+        
+        if (botHP <= 0) {
+            enemyHealthBar.setValue(0);
+        } else {
+            enemyHealthBar.setValue(botHP);
+        }
+        
+        if (botXP >= 100) {
+            enemyCritBar.setValue(100);
+        } else {
+            enemyCritBar.setValue(botXP);
+        }
     }
 
     // range for characters that are typable on keyboard
