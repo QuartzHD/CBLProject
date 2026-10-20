@@ -19,19 +19,19 @@ public class Bot extends Thread{
             case 0: 
                 minSleepTime = 1;
                 maxSleepTime = 2;
-                maxRange = 10;
+                maxRange = 15;
                 break;
                 
             case 1:
                 minSleepTime = 0.5;
                 maxSleepTime = 1.3;
-                maxRange = 20;
+                maxRange = 30;
                 break;
                 
             case 2:
                 minSleepTime = 0.3;
                 maxSleepTime = 0.8;
-                maxRange = 30;
+                maxRange = 40;
                 break;
                 
             case 3: 
@@ -51,6 +51,7 @@ public class Bot extends Thread{
                 if (randomNum == 1) {
                     System.out.println("Bot missed an input!");
                     botStringIndex = 0;
+                    Type_Project.botMadeMistake = true;
                     continue;
                 } 
                 
@@ -58,12 +59,13 @@ public class Bot extends Thread{
                 if (botStringIndex == stringToType.length()) {
                     System.out.println("Bot won!");
                     Type_Project.botWon = true;
-                    Type_Project.endFight();
+                    Type_Project.endRound();
                     throw new InterruptedException();
                 } else {
                     System.out.println("Bot at" + botStringIndex);
                 }
                 int finalSleepTime = (int)(ThreadLocalRandom.current().nextDouble(minSleepTime, maxSleepTime) * 1000);
+                Type_Project.updateTextDisplay();
                 Thread.sleep(finalSleepTime); // this way the typespeed of the bot depends on difficulty 
             } while(true);
         } catch (InterruptedException e) {
