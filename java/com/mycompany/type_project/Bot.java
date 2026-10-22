@@ -5,7 +5,7 @@ import java.util.concurrent.ThreadLocalRandom;
 public class Bot extends Thread{
     
     public int difficultyNum;
-    public int botStringIndex = 0;
+    public static int botStringIndex = 0;
     public String stringToType;
     public double minSleepTime;
     public double maxSleepTime;
@@ -65,7 +65,7 @@ public class Bot extends Thread{
                     System.out.println("Bot at" + botStringIndex);
                 }
                 int finalSleepTime = (int)(ThreadLocalRandom.current().nextDouble(minSleepTime, maxSleepTime) * 1000);
-                Type_Project.updateTextDisplay();
+                FightPanel.UpdateTextDisplay(Type_Project.playerStringIndex, botStringIndex, Type_Project.stringToType);
                 Thread.sleep(finalSleepTime); // this way the typespeed of the bot depends on difficulty 
             } while(true);
         } catch (InterruptedException e) {
