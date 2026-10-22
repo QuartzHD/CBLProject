@@ -9,10 +9,6 @@ import java.awt.*;
 
 import java.net.*;
 
-/**
- *
- * @author Bobbert
- */
 public class AnimatedSprite extends JLabel {
 
     private ImageIcon[] frames;
@@ -21,6 +17,8 @@ public class AnimatedSprite extends JLabel {
 
     private int spriteWidth;
     private int spriteHeight;
+    private boolean oneCycle = false;
+    private Runnable onFinished;
 
     public AnimatedSprite(String imageFolder,
             int delay,
@@ -61,6 +59,19 @@ public class AnimatedSprite extends JLabel {
         setPreferredSize(new Dimension(width, height));
 
         timer = new Timer(delay, e -> {
+
+            if (oneCycle && index == frames.length - 1) {
+                timer.stop();
+                oneCycle = false;
+                
+                if(onFinished != null) {
+                    onFinished.run();
+                    onFinished = null;
+                }
+                
+                this.setVisible(false);
+                return;
+            }
             index = (index + 1) % frames.length;
             setIcon(frames[index]);
         });
@@ -71,11 +82,23 @@ public class AnimatedSprite extends JLabel {
 
     }
 
+    public void oneCycleAnimation(Runnable action) {
+        this.setVisible(true);
+        timer.stop();
+        index = 0;
+        setIcon(frames[index]);
+        oneCycle = true;
+        onFinished = action;
+        timer.start();
+    }
+
     public void stopAnimation() {
+        this.setVisible(false);
         timer.stop();
     }
 
     public void startAnimation() {
+        this.setVisible(true);
         timer.start();
     }
 
