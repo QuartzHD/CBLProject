@@ -4,10 +4,6 @@ import java.awt.*;
 import java.awt.event.*;
 import java.util.ArrayList;
 
-/**
- *
- * @author ruben
- */
 public class InputListener implements KeyListener {
 
     @Override
