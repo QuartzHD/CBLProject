@@ -31,7 +31,7 @@
 Welcome to Type Toernooi!
 In this game, your goal is type faster than your opponent. Battle the enemy by typing as fast as possible! Only then are you allowed to attack!
 Instructions for launch:
-1. Open the ZIP file in any IDE.
+1. Extract the ZIP file and open the Type_Project directory in any IDE (preferably Apache Netbeans).
 2. Navigate to Type_Project.java.
 3. Run the code inside Type_Project.java.
 4. Get ready to play!
